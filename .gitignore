@@ -1,0 +1,4 @@
+node_modules
+testrun
+coverage
+.env

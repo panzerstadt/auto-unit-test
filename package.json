@@ -1,0 +1,36 @@
+{
+  "name": "auto-unit-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bin/index.mjs",
+  "bin": {
+    "auto-unit-test": "./bin/index.mjs"
+  },
+  "scripts": {
+    "start": "ts-node-esm index.mts",
+    "test": "jest",
+    "build": "tsc --outDir bin",
+    "run:build": "node bin/index.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panzerstadt/auto-unit-test.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/panzerstadt/auto-unit-test/issues"
+  },
+  "homepage": "https://github.com/panzerstadt/auto-unit-test#readme",
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "dotenv": "^16.0.3",
+    "openai": "^3.2.1",
+    "ts-node": "^10.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.14.6",
+    "jest": "^29.4.3"
+  }
+}
