@@ -7,7 +7,7 @@
     "auto-unit-test": "./bin/index.mjs"
   },
   "scripts": {
-    "start": "ts-node-esm index.mts",
+    "start": "ts-node-esm src/index.mts",
     "test": "jest",
     "build": "tsc --outDir bin",
     "run:build": "node bin/index.mjs"

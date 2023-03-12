@@ -16,3 +16,12 @@ auto-unit-test
 ### changing file
 
 auto-unit-test's .mts is compiled into .mjs, please run `npm run build`
+
+## TODO
+
+```
+[x] - refactor into smaller files
+[x] - ask follow up questions to chatgpt if coverage is lower than a number
+[ ] - test on different file types
+[ ] - https://platform.openai.com/docs/api-reference/completions/create#completions/create-stream
+```
