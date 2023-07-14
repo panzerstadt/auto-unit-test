@@ -26,7 +26,7 @@ export function runTests(filePath, extension = "js") {
         const { results } = yield jest.runCLI(options, options.projects);
         if (results.testResults.length === 0) {
             console.warn("No tests were run.");
-            return;
+            return false;
         }
         const resultJSON = results.testResults[0].testResults;
         console.log("\nresults:\n-----------");
@@ -37,6 +37,8 @@ export function runTests(filePath, extension = "js") {
         const hasFailures = resultJSON.some((res) => res.status !== "passed");
         if (hasFailures) {
             console.warn("\nOne or more tests failed, please fix them before continuing.");
+            return false;
         }
+        return true;
     });
 }

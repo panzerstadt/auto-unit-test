@@ -19,8 +19,8 @@ export function hasEnoughTestCoverage(coverageJsonFilePath, minimumCoverage = 80
             return false;
         if (functions.pct < minimumCoverage)
             return false;
-        if (branches.pct < minimumCoverage)
-            return false;
+        if (branches.pct !== 0 && branches.pct < minimumCoverage)
+            return false; // 0 means the function has no branches, not that there is no coverage
         return true;
     });
 }

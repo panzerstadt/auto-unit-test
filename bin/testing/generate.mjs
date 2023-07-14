@@ -8,28 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import path from "path";
-import { openai } from "../api/index.mjs";
+import { ask, continueConversation } from "../api/index.mjs";
+import { getLang } from "../utils.mjs";
 export function generateTests(filePath, input, extension = "js") {
     return __awaiter(this, void 0, void 0, function* () {
         const baseName = path.basename(filePath);
-        const getLang = (extension) => {
-            switch (extension) {
-                case "js":
-                    return "javascript";
-                case "ts":
-                    return "typescript";
-                case "mjs":
-                    return "javascript";
-                case "mts":
-                    return "typescript";
-                case "jsx":
-                    return "javascript react";
-                case "tsx":
-                    return "typescript react";
-                default:
-                    return "javascript";
-            }
-        };
         const prompt = `// ${getLang(extension)}
     // write unit tests for the following function that will work for
     // the jest testing framework.
@@ -37,7 +20,7 @@ export function generateTests(filePath, input, extension = "js") {
     // Assume that the reply is a valid ${getLang(extension)} file
     // the tests have to achieve 100% test coverage
     // the tests should additionally cover edge cases, and should be as comprehensive as possible
-    // if you ever need to add any comments, please prefix them with '//' to ensure your reponse is still valid ${getLang(extension)} code
+    // if you ever need to add any comments, please prefix them with '//' to ensure your response is still valid ${getLang(extension)} code
   
     ${input}
     
@@ -45,21 +28,14 @@ export function generateTests(filePath, input, extension = "js") {
     const testFunction = require("./${baseName}');
     `;
         console.log("prompt sent", prompt);
-        const initialMessage = { role: "user", content: prompt };
-        const completions = yield openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
-            messages: [initialMessage],
-            temperature: 0,
-        });
-        const generatedTests = completions.data.choices[0].message.content || "";
-        return { tests: generatedTests, messages: [initialMessage] };
+        const { reply, history } = yield ask(prompt);
+        return { tests: reply, history };
     });
 }
-export function generateAdditionalTests(testFilePath, promptHistory) {
+export function generateAdditionalTests(promptHistory) {
     return __awaiter(this, void 0, void 0, function* () {
-        // const prompt =
-        console.log("TODO: generate additional tests");
-        console.log("filepath", testFilePath);
-        console.log("prompts so far", promptHistory);
+        const prompt = `the given tests are not 100% coverage yet. please add more tests. you don't have to repeat yourself, as i will append your reply to the previous code. please also continue to only reply in valid code, if you feel the need to add any comments, please also prefix them with '//' to ensure your response is valid code`;
+        const { reply, history } = yield continueConversation(prompt, promptHistory);
+        return { tests: reply, history };
     });
 }
