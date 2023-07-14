@@ -15,24 +15,34 @@ import chokidar from 'chokidar';
 import { existsSync } from 'fs';
 import fs from 'node:fs/promises';
 import jest from 'jest';
+const WITH_DOCS = !!process.env.GENERATE_DOCS;
+const LANGUAGE = {
+    name: process.env.LANGUAGE_NAME || 'Javascript',
+    ext: process.env.LANGUAGE_EXT || 'js',
+};
+const makeImport = {
+    Javascript: (filePath) => `const testFunction = require("./${filePath}');`,
+    Typescript: (filePath) => `import testFunction from '${filePath}';`,
+};
 const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 function generateTests(filePath, input) {
     return __awaiter(this, void 0, void 0, function* () {
-        const prompt = `// Javascript
+        const prompt = `// ${LANGUAGE.name}
   // write unit tests for the following function that will work for
   // the jest testing framework.
   // Assume that the function is exported as a default export, and name the function testFunction
   // Assume that the reply is a valid javascript file
   // the tests have to achieve 100% test coverage
   // the tests should additionally cover edge cases, and should be as comprehensive as possible
+  // if you want to add an explanation, please prefix it with // in order to make it valid javascript
 
   ${input}
   
   // in your reply, start with the following:
-  const testFunction = require("./${filePath}');
+  ${makeImport[LANGUAGE.name](filePath)}
   `;
         const completions = yield openai.createChatCompletion({
             model: 'gpt-3.5-turbo',
@@ -57,7 +67,7 @@ function runTests(filePath) {
         const { results } = yield jest.runCLI(options, options.projects);
         // console.log("converage?", results.testResults); // TODO: jest doens't expose coverage data
         // console.log("results", results.testResults[0].testResults);
-        console.log('[DEBUG] coverage data:', results.coverageMap.data);
+        // console.log('[DEBUG] coverage data:', results.coverageMap.data);
         if (results.testResults.length === 0) {
             console.warn('No tests were run.');
             return;
@@ -76,7 +86,7 @@ function runTests(filePath) {
 }
 function generateTestsOnSave(filePath) {
     return __awaiter(this, void 0, void 0, function* () {
-        const testFilePath = filePath.replace('.js', '.test.js');
+        const testFilePath = filePath.replace(`.${LANGUAGE.ext}`, `.test.${LANGUAGE.ext}`);
         if (existsSync(testFilePath)) {
             console.log(`Tests exist for ${filePath}, skipping. If you want to regenerate tests, delete the current one and save the file again.`);
             return;
@@ -105,7 +115,7 @@ function generateDocs(input) {
 }
 function generateDocsOnSave(filePath) {
     return __awaiter(this, void 0, void 0, function* () {
-        const docFilePath = filePath.replace('.js', '.md');
+        const docFilePath = filePath.replace(`.${LANGUAGE.ext}`, '.md');
         if (existsSync(docFilePath)) {
             console.log(`Documentation exists for ${filePath}, skipping. If you want to regenerate docs, delete the current one and save the file again.`);
             return;
@@ -121,9 +131,11 @@ function generateDocsOnSave(filePath) {
         }
     });
 }
-console.log('auto-unit-test started. save any .js file and watch it generate tests and docs!');
+console.log(`auto-unit-test started. save any .${LANGUAGE.ext} file and watch it generate tests${WITH_DOCS ? ' and docs' : ''}!`);
 // watch for changes to js files, skipping over test files
-chokidar.watch('**/*.js', { atomic: true }).on('change', (filePath) => __awaiter(void 0, void 0, void 0, function* () {
+chokidar
+    .watch(`**/*.${LANGUAGE.ext}`, { atomic: true })
+    .on('change', (filePath) => __awaiter(void 0, void 0, void 0, function* () {
     if (filePath.includes('node_modules'))
         return;
     if (filePath.includes('coverage'))
@@ -139,8 +151,10 @@ chokidar.watch('**/*.js', { atomic: true }).on('change', (filePath) => __awaiter
     }
     // generate docs, tests and run tests on code
     if (!filePath.includes('.test.')) {
-        console.log(`trying to generate docs for: ${filePath}...`);
-        generateDocsOnSave(filePath);
+        if (WITH_DOCS) {
+            console.log(`trying to generate docs for: ${filePath}...`);
+            generateDocsOnSave(filePath);
+        }
         console.log(`trying to generate tests for: ${filePath}...`);
         yield generateTestsOnSave(filePath);
         console.log(`running tests for ${filePath}`);
