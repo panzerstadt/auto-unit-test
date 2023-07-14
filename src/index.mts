@@ -20,6 +20,8 @@ import { runTests } from "./testing/run.mjs";
 import { hasEnoughTestCoverage } from "./testing/utils.mjs";
 import { loadPromptHistory, savePromptHistory } from "./utils.mjs";
 
+const GENERATE_DOCS = !!process.env.GENERATE_DOCUMENTATION;
+
 async function generateTestsOnSave(filePath: string, extension = "js") {
   const testFilePath = getTestFilePath(filePath, extension);
   const promptHistoryFilePath = getPromptHistoryFilePath(filePath, extension);
@@ -84,12 +86,21 @@ export async function generateDocsOnSave(filePath: string, extension = "js") {
   }
 }
 
-console.log("auto-unit-test started. save any .js file and watch it generate tests and docs!");
+console.log(
+  `auto-unit-test started. save any .js|ts|mjs|mts|jsx|tsx file and watch it generate tests${
+    GENERATE_DOCS ? " and docs" : ""
+  }!`
+);
 // watch for changes to js files, skipping over test files
 // filetypes: js, ts, mjs, mts, jsx, tsx
 chokidar
-  .watch("**/*.js", { atomic: true, awaitWriteFinish: true, ignored: IGNORED })
+  .watch("**/*.{js,ts,mjs,mts,jsx,tsx}", {
+    atomic: true,
+    awaitWriteFinish: true,
+    ignored: IGNORED,
+  })
   .on("change", async (filePath) => {
+    const extension = filePath.split(".")[1];
     // if the file being saved is a test file, run tests
     if (filePath.includes(".test.")) {
       const cleaned = filePath.replace(".test.", ".");
@@ -98,19 +109,21 @@ chokidar
       return;
     }
 
-    // generate docs, tests and run tests on code
-    console.log(`trying to generate docs for: ${filePath}...`);
-    generateDocsOnSave(filePath, "js");
+    if (GENERATE_DOCS) {
+      // generate docs, tests and run tests on code
+      console.log(`trying to generate docs for: ${filePath}...`);
+      generateDocsOnSave(filePath, extension);
+    }
 
     console.log(`trying to generate tests for: ${filePath}...`);
-    await generateTestsOnSave(filePath, "js");
+    await generateTestsOnSave(filePath, extension);
 
     console.log(`running tests for ${filePath}`);
     const pass = await runTests(filePath);
 
     if (!pass) return;
 
-    const coverageFile = getCoverageFilePath(filePath, "js");
+    const coverageFile = getCoverageFilePath(filePath, extension);
     if (existsSync(coverageFile)) {
       const highEnough = await hasEnoughTestCoverage(coverageFile);
       if (!highEnough) {
@@ -118,7 +131,7 @@ chokidar
 
         try {
           const promptHistory = await loadPromptHistory(filePath);
-          await addMoreTests(filePath, "js", promptHistory);
+          await addMoreTests(filePath, extension, promptHistory);
         } catch (e) {
           console.error("Error adding tests", e);
         }

@@ -1,7 +1,6 @@
 import { ChatCompletionRequestMessage } from "openai";
 import path from "path";
-import { ask, continueConversation, openai } from "../api/index.mjs";
-import fs from "node:fs/promises";
+import { ask, continueConversation } from "../api/index.mjs";
 import { getLang } from "../utils.mjs";
 
 export async function generateTests(filePath: string, input: string, extension = "js") {
